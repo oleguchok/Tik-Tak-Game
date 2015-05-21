@@ -123,6 +123,11 @@ namespace Tik_Tak
                     && !movingLeft)
                 movingLeft = true;
 
+            if(DetectPaddleBallCollision())
+            {
+                movingUp = true;
+            }
+
             base.Update(gameTime);
         }
 
@@ -142,6 +147,17 @@ namespace Tik_Tak
 
 
             base.Draw(gameTime);
+        }
+
+        public bool DetectPaddleBallCollision()
+        {
+            if ((ballPosition.Y + ball.Height) >= paddlePosition.Y &&
+                (ballPosition.Y + ball.Height) < (paddlePosition.Y + 4) &&
+                (ballPosition.X + ball.Width) > paddlePosition.X &&
+                ballPosition.X < (paddlePosition.X + paddle.Width))
+                return true;
+            else
+                return false;
         }
     }
 }
