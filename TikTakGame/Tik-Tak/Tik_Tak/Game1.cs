@@ -53,7 +53,7 @@ namespace Tik_Tak
             // TODO: use this.Content to load your game content here
             paddle = Content.Load<Texture2D>("Paddle");
             paddlePosition = new Vector2((graphics.GraphicsDevice.Viewport.Width/2) - (paddle.Width/2)
-                , graphics.GraphicsDevice.Viewport.Height - 80);
+                , graphics.GraphicsDevice.Viewport.Height - 70);
         }
 
         /// <summary>
@@ -77,6 +77,16 @@ namespace Tik_Tak
                 this.Exit();
 
             // TODO: Add your update logic here
+            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Left))
+            {
+                paddlePosition.X -= 3;
+            }
+
+            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Right))
+            {
+                paddlePosition.X += 3;
+            }
+
 
             base.Update(gameTime);
         }
