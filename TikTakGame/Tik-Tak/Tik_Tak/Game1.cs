@@ -22,6 +22,11 @@ namespace Tik_Tak
         Texture2D paddle;
         Vector2 paddlePosition = Vector2.Zero;
 
+        Texture2D ball;
+        Vector2 ballPosition = Vector2.Zero;
+
+        bool movingUp, movingLeft;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -47,13 +52,20 @@ namespace Tik_Tak
         /// </summary>
         protected override void LoadContent()
         {
+            movingLeft = true;
+            movingUp = true;
+
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
             paddle = Content.Load<Texture2D>("Paddle");
-            paddlePosition = new Vector2((graphics.GraphicsDevice.Viewport.Width/2) - (paddle.Width/2)
-                , graphics.GraphicsDevice.Viewport.Height - 70);
+            paddlePosition = new Vector2((graphics.GraphicsDevice.Viewport.Width/2) - (paddle.Width/2),
+                graphics.GraphicsDevice.Viewport.Height - 70);
+
+            ball = Content.Load<Texture2D>("Ball");
+            ballPosition = new Vector2((graphics.GraphicsDevice.Viewport.Width / 2) - (ball.Width / 2),
+                graphics.GraphicsDevice.Viewport.Height - 115);
         }
 
         /// <summary>
@@ -72,21 +84,44 @@ namespace Tik_Tak
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            // Allows the game to exit
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-                this.Exit();
-
             // TODO: Add your update logic here
-            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Left))
+            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Left) &&
+                paddlePosition.X >= 0)
             {
                 paddlePosition.X -= 3;
             }
 
-            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Right))
+            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Right) &&
+                paddlePosition.X <= (graphics.GraphicsDevice.Viewport.Width - paddle.Width))
             {
                 paddlePosition.X += 3;
             }
 
+            if (movingUp)
+            {
+                ballPosition.Y -= 3;
+            }
+            if(movingLeft)
+            {
+                ballPosition.X -= 3;
+            }
+            if(!movingUp)
+            {
+                ballPosition.Y += 3;
+            }
+            if(!movingLeft)
+            {
+                ballPosition.X += 3;
+            }
+
+            if (ballPosition.X <= 0 && movingLeft)
+                movingLeft = false;
+            if (ballPosition.Y <= 0 && movingUp)
+                movingUp = false;
+
+            if (ballPosition.X >= (graphics.GraphicsDevice.Viewport.Width - ball.Width)
+                    && !movingLeft)
+                movingLeft = true;
 
             base.Update(gameTime);
         }
@@ -102,6 +137,7 @@ namespace Tik_Tak
             // TODO: Add your drawing code here
             spriteBatch.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend);
             spriteBatch.Draw(paddle, paddlePosition, Color.White);
+            spriteBatch.Draw(ball, ballPosition, Color.White);
             spriteBatch.End();
 
 
