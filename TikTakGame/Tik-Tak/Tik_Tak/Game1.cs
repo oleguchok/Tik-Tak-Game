@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Net;
 using System.Net.Sockets;
+using System.IO;
 
 namespace Tik_Tak
 {
@@ -17,9 +18,8 @@ namespace Tik_Tak
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-
-        Texture2D paddle;
-        Vector2 paddlePosition = Vector2.Zero;
+        GameplayObjects player;
+        GameplayObjects enemy;
 
         Texture2D ball;
         Vector2 ballPosition = Vector2.Zero;
@@ -29,6 +29,10 @@ namespace Tik_Tak
         int PORT = 1490;
         int BUFFER_SIZE = 2048;
         byte[] readBuffer;
+
+        MemoryStream readStream, writeStream;
+        BinaryReader reader;
+        BinaryWriter writer;
 
         bool movingUp, movingLeft;
 
@@ -55,7 +59,15 @@ namespace Tik_Tak
             tcpClient.NoDelay = true;
             readBuffer = new byte[BUFFER_SIZE];
 
+            readStream = new MemoryStream();
+            writeStream = new MemoryStream();
+
+            reader = new BinaryReader(readStream);
+            writer = new BinaryWriter(writeStream);
+
             tcpClient.GetStream().BeginRead(readBuffer, 0, BUFFER_SIZE, StreamReceived, null);
+
+            player = new GameplayObjects();
 
             base.Initialize();
         }
@@ -68,10 +80,13 @@ namespace Tik_Tak
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
-            paddle = Content.Load<Texture2D>("Paddle");
-            paddlePosition = new Vector2((graphics.GraphicsDevice.Viewport.Width/2) - (paddle.Width/2),
+            player.Texture = Content.Load<Texture2D>("Paddle");
+            player.Position = new Vector2((graphics.GraphicsDevice.Viewport.Width / 2) - (player.Texture.Width / 2),
                 graphics.GraphicsDevice.Viewport.Height - 70);
+
+            /*paddle = Content.Load<Texture2D>("Paddle");
+            paddlePosition = new Vector2((graphics.GraphicsDevice.Viewport.Width/2) - (paddle.Width/2),
+                graphics.GraphicsDevice.Viewport.Height - 70);*/
 
             ball = Content.Load<Texture2D>("Ball");
             ballPosition = new Vector2((graphics.GraphicsDevice.Viewport.Width / 2) - (ball.Width / 2),
@@ -99,15 +114,15 @@ namespace Tik_Tak
 
                 case GameStates.Playing:
                     if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Left) &&
-                        paddlePosition.X >= 0)
+                        player.Position.X >= 0)
                     {
-                        paddlePosition.X -= 3;
+                        player.Position = new Vector2(player.Position.X - 3, player.Position.Y);
                     }
 
                     if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Right) &&
-                        paddlePosition.X <= (graphics.GraphicsDevice.Viewport.Width - paddle.Width))
+                        player.Position.X <= (graphics.GraphicsDevice.Viewport.Width - player.Texture.Width))
                     {
-                        paddlePosition.X += 3;
+                        player.Position = new Vector2(player.Position.X + 3, player.Position.Y);
                     }
 
                     if (movingUp)
@@ -141,10 +156,7 @@ namespace Tik_Tak
                         movingUp = true;
                     }
                     break;
-            }
-
-            // TODO: Add your update logic here
-            
+            }            
 
             base.Update(gameTime);
         }
@@ -153,7 +165,6 @@ namespace Tik_Tak
         {
             GraphicsDevice.Clear(Color.Black);
 
-            // TODO: Add your drawing code here
             spriteBatch.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend);
             switch (currentGameState)
             {
@@ -162,7 +173,10 @@ namespace Tik_Tak
                     break;
 
                 case GameStates.Playing:
-                    spriteBatch.Draw(paddle, paddlePosition, Color.White);
+                    if(player != null)
+                        spriteBatch.Draw(player.Texture, player.Position, Color.White);
+                    if (enemy != null)
+                        spriteBatch.Draw(enemy.Texture, enemy.Position, Color.White);
                     spriteBatch.Draw(ball, ballPosition, Color.White);
                     break;
             }
@@ -175,10 +189,10 @@ namespace Tik_Tak
 
         public bool DetectPaddleBallCollision()
         {
-            if ((ballPosition.Y + ball.Height) >= paddlePosition.Y &&
-                (ballPosition.Y + ball.Height) < (paddlePosition.Y + 4) &&
-                (ballPosition.X + ball.Width) > paddlePosition.X &&
-                ballPosition.X < (paddlePosition.X + paddle.Width))
+            if ((ballPosition.Y + ball.Height) >= player.Position.Y &&
+                (ballPosition.Y + ball.Height) < (player.Position.Y + 4) &&
+                (ballPosition.X + ball.Width) > player.Position.X &&
+                ballPosition.X < (player.Position.X + player.Texture.Width))
                 return true;
             else
                 return false;
@@ -186,7 +200,105 @@ namespace Tik_Tak
 
         private void StreamReceived(IAsyncResult ar)
         {
+            int bytesRead = 0;
+
+            try
+            {
+                lock(tcpClient.GetStream())
+                {
+                    bytesRead = tcpClient.GetStream().EndRead(ar);
+                }
+            }
+            catch(Exception e)
+            {
+                
+            }
+            
+            if (bytesRead == 0)
+            {
+                tcpClient.Close();
+                return;
+            }
+
+            byte[] data = new byte[bytesRead];
+
+            for (int i = 0; i < bytesRead; i++)
+                data[i] = readBuffer[i];
+
+            ProcessData(data);
+
             tcpClient.GetStream().BeginRead(readBuffer, 0, BUFFER_SIZE, StreamReceived, null);
+        }
+
+        private void ProcessData(byte[] data)
+        {
+            readStream.SetLength(0);
+            readStream.Position = 0;
+
+            readStream.Write(data, 0, data.Length);
+            readStream.Position = 0;
+
+            Protocol p;
+
+            try
+            {
+                p = (Protocol)reader.ReadByte();
+ 
+                if(p == Protocol.Connected)
+                {
+                    if (enemy == null)
+                    {
+                        enemy = new GameplayObjects();
+                        enemy.Texture = Content.Load<Texture2D>("PaddleEnemy");
+                        enemy.Position = new Vector2((graphics.GraphicsDevice.Viewport.Width / 2) - (enemy.Texture.Width / 2),
+                            100);
+
+                        writeStream.Position = 0;
+                        writer.Write((byte)Protocol.Connected);
+                        SendData(GetDataFromMemoryStream(writeStream));
+                    }
+                }
+                else if (p == Protocol.Disconnected)
+                {
+                    enemy = null;
+                }
+
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
+
+        public void SendData(byte[] b)
+        {
+            try
+            {
+                lock (tcpClient.GetStream())
+                {
+                    tcpClient.GetStream().BeginWrite(b, 0, b.Length, null, null);
+                }
+            }
+            catch (Exception e)
+            {
+                
+            }
+        }
+
+        private byte[] GetDataFromMemoryStream(MemoryStream ms)
+        {
+            byte[] result;
+
+            lock (ms)
+            {
+                int bytesWritten = (int)ms.Position;
+                result = new byte[bytesWritten];
+
+                ms.Position = 0;
+                ms.Read(result, 0, bytesWritten);
+            }
+
+            return result;
         }
     }
 }
