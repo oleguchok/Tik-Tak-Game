@@ -9,12 +9,10 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Net;
+using System.Net.Sockets;
 
 namespace Tik_Tak
 {
-    /// <summary>
-    /// This is the main type for your game
-    /// </summary>
     public class Game1 : Microsoft.Xna.Framework.Game
     {
         GraphicsDeviceManager graphics;
@@ -25,6 +23,12 @@ namespace Tik_Tak
 
         Texture2D ball;
         Vector2 ballPosition = Vector2.Zero;
+
+        TcpClient tcpClient;
+        string IP = "127.0.0.1";
+        int PORT = 1490;
+        int BUFFER_SIZE = 2048;
+        byte[] readBuffer;
 
         bool movingUp, movingLeft;
 
@@ -46,7 +50,12 @@ namespace Tik_Tak
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            tcpClient = new TcpClient();
+            tcpClient.Connect(IP, PORT);
+            tcpClient.NoDelay = true;
+            readBuffer = new byte[BUFFER_SIZE];
+
+            tcpClient.GetStream().BeginRead(readBuffer, 0, BUFFER_SIZE, StreamReceived, null);
 
             base.Initialize();
         }
@@ -173,6 +182,11 @@ namespace Tik_Tak
                 return true;
             else
                 return false;
+        }
+
+        private void StreamReceived(IAsyncResult ar)
+        {
+            tcpClient.GetStream().BeginRead(readBuffer, 0, BUFFER_SIZE, StreamReceived, null);
         }
     }
 }
