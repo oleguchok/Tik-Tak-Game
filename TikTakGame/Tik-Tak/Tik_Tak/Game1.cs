@@ -8,6 +8,7 @@ using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Net;
 
 namespace Tik_Tak
 {
@@ -27,18 +28,22 @@ namespace Tik_Tak
 
         bool movingUp, movingLeft;
 
+        enum GameStates
+        {
+            Menu,
+            Playing,
+            Pause
+        }
+
+        GameStates currentGameState = GameStates.Menu;
+        cButton btnPlay;
+        
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
         }
 
-        /// <summary>
-        /// Allows the game to perform any initialization it needs to before starting to run.
-        /// This is where it can query for any required services and load any non-graphic
-        /// related content.  Calling base.Initialize will enumerate through any components
-        /// and initialize them as well.
-        /// </summary>
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
@@ -46,15 +51,11 @@ namespace Tik_Tak
             base.Initialize();
         }
 
-        /// <summary>
-        /// LoadContent will be called once per game and is the place to load
-        /// all of your content.
-        /// </summary>
         protected override void LoadContent()
         {
             movingLeft = true;
             movingUp = true;
-
+            IsMouseVisible = true;
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -66,83 +67,97 @@ namespace Tik_Tak
             ball = Content.Load<Texture2D>("Ball");
             ballPosition = new Vector2((graphics.GraphicsDevice.Viewport.Width / 2) - (ball.Width / 2),
                 graphics.GraphicsDevice.Viewport.Height - 115);
+
+            btnPlay = new cButton(Content.Load<Texture2D>("start"), graphics.GraphicsDevice);
+            btnPlay.SetPosition(new Vector2(350, 300));
         }
 
-        /// <summary>
-        /// UnloadContent will be called once per game and is the place to unload
-        /// all content.
-        /// </summary>
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
         }
 
-        /// <summary>
-        /// Allows the game to run logic such as updating the world,
-        /// checking for collisions, gathering input, and playing audio.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            MouseState mouse = Mouse.GetState();
+
+            switch(currentGameState)
+            {
+                case GameStates.Menu:
+                    if (btnPlay.isClicked == true) currentGameState = GameStates.Playing;
+                    btnPlay.Update(mouse);
+                    break;
+
+                case GameStates.Playing:
+                    if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Left) &&
+                        paddlePosition.X >= 0)
+                    {
+                        paddlePosition.X -= 3;
+                    }
+
+                    if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Right) &&
+                        paddlePosition.X <= (graphics.GraphicsDevice.Viewport.Width - paddle.Width))
+                    {
+                        paddlePosition.X += 3;
+                    }
+
+                    if (movingUp)
+                    {
+                        ballPosition.Y -= 3;
+                    }
+                    if(movingLeft)
+                    {
+                        ballPosition.X -= 3;
+                    }
+                    if(!movingUp)
+                    {
+                        ballPosition.Y += 3;
+                    }
+                    if(!movingLeft)
+                    {
+                        ballPosition.X += 3;
+                    }
+
+                    if (ballPosition.X <= 0 && movingLeft)
+                        movingLeft = false;
+                    if (ballPosition.Y <= 0 && movingUp)
+                        movingUp = false;
+
+                    if (ballPosition.X >= (graphics.GraphicsDevice.Viewport.Width - ball.Width)
+                            && !movingLeft)
+                        movingLeft = true;
+
+                    if(DetectPaddleBallCollision())
+                    {
+                        movingUp = true;
+                    }
+                    break;
+            }
+
             // TODO: Add your update logic here
-            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Left) &&
-                paddlePosition.X >= 0)
-            {
-                paddlePosition.X -= 3;
-            }
-
-            if (Keyboard.GetState(PlayerIndex.One).IsKeyDown(Keys.Right) &&
-                paddlePosition.X <= (graphics.GraphicsDevice.Viewport.Width - paddle.Width))
-            {
-                paddlePosition.X += 3;
-            }
-
-            if (movingUp)
-            {
-                ballPosition.Y -= 3;
-            }
-            if(movingLeft)
-            {
-                ballPosition.X -= 3;
-            }
-            if(!movingUp)
-            {
-                ballPosition.Y += 3;
-            }
-            if(!movingLeft)
-            {
-                ballPosition.X += 3;
-            }
-
-            if (ballPosition.X <= 0 && movingLeft)
-                movingLeft = false;
-            if (ballPosition.Y <= 0 && movingUp)
-                movingUp = false;
-
-            if (ballPosition.X >= (graphics.GraphicsDevice.Viewport.Width - ball.Width)
-                    && !movingLeft)
-                movingLeft = true;
-
-            if(DetectPaddleBallCollision())
-            {
-                movingUp = true;
-            }
+            
 
             base.Update(gameTime);
         }
 
-        /// <summary>
-        /// This is called when the game should draw itself.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
 
             // TODO: Add your drawing code here
             spriteBatch.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend);
-            spriteBatch.Draw(paddle, paddlePosition, Color.White);
-            spriteBatch.Draw(ball, ballPosition, Color.White);
+            switch (currentGameState)
+            {
+                case GameStates.Menu:
+                    btnPlay.Draw(spriteBatch);
+                    break;
+
+                case GameStates.Playing:
+                    spriteBatch.Draw(paddle, paddlePosition, Color.White);
+                    spriteBatch.Draw(ball, ballPosition, Color.White);
+                    break;
+            }
+            
             spriteBatch.End();
 
 
