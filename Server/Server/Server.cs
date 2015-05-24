@@ -33,6 +33,7 @@ namespace Server
             listener = new Listener(port);
             listener.userAdded += new ConnectionEvent(listener_userAdded);
             listener.Start();
+         
 
             readStream = new MemoryStream();
             writeStream = new MemoryStream();

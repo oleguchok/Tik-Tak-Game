@@ -9,6 +9,9 @@ namespace Tik_Tak
     {
         Disconnected = 0,
         Connected = 1,
-        PlayerMoved = 2
+        Move = 2,
+        Pause = 3,
+        Continue = 4,
+        GameOver = 5
     }
 }
