@@ -45,14 +45,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="start.png">
-      <Name>start</Name>
-      <Importer>TextureImporter</Importer>
-      <Processor>TextureProcessor</Processor>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="PaddleEnemy.png">
       <Name>PaddleEnemy</Name>
       <Importer>TextureImporter</Importer>

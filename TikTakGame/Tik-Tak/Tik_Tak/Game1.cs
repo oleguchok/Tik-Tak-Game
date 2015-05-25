@@ -43,7 +43,6 @@ namespace Tik_Tak
         bool host = false;
 
         GameStates currentGameState = GameStates.Playing;
-        cButton btnPlay;
         
         public Game1()
         {
@@ -62,8 +61,6 @@ namespace Tik_Tak
             player = new GameplayObjects();
             enemy = new GameplayObjects();
             gameOver = new GameplayObjects();
-
-            //GameConsole console = new GameConsole(this, spriteBatch);
 
             base.Initialize();
         }
@@ -84,9 +81,6 @@ namespace Tik_Tak
             ball = Content.Load<Texture2D>("Ball");
             ballPosition = new Vector2((graphics.GraphicsDevice.Viewport.Width / 2) - (ball.Width / 2),
                 graphics.GraphicsDevice.Viewport.Height - 95);
-
-            btnPlay = new cButton(Content.Load<Texture2D>("start"), graphics.GraphicsDevice);
-            btnPlay.SetPosition(new Vector2(350, 300));
 
             pause = Content.Load<Texture2D>("pause");
             pauseRectangle = new Rectangle(0, 0, pause.Width, pause.Height);
@@ -112,11 +106,6 @@ namespace Tik_Tak
 
             switch(currentGameState)
             {
-                case GameStates.Menu:
-                    if (btnPlay.isClicked == true) currentGameState = GameStates.Playing;
-                    btnPlay.Update(mouse);
-                    break;
-
                 case GameStates.Playing:
                     if (Keyboard.GetState().IsKeyDown(Keys.Space))
                         currentGameState = GameStates.Pause;
@@ -142,19 +131,19 @@ namespace Tik_Tak
                     {
                         if (movingUp)
                         {
-                            ballPosition.Y -= 1;
+                            ballPosition.Y -= 2;
                         }
                         if (movingLeft)
                         {
-                            ballPosition.X -= 1;
+                            ballPosition.X -= 2;
                         }
                         if (!movingUp)
                         {
-                            ballPosition.Y += 1;
+                            ballPosition.Y += 2;
                         }
                         if (!movingLeft)
                         {
-                            ballPosition.X += 1;
+                            ballPosition.X += 2;
                         }
 
                         if (ballPosition.X <= 0 && movingLeft)
@@ -228,10 +217,6 @@ namespace Tik_Tak
             spriteBatch.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend);
             switch (currentGameState)
             {
-                case GameStates.Menu:
-                    btnPlay.Draw(spriteBatch);
-                    break;
-
                 case GameStates.Playing:
                     if(player != null)
                         spriteBatch.Draw(player.Texture, player.Position, Color.White);

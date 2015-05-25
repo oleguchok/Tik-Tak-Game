@@ -7,10 +7,8 @@ namespace Tik_Tak
 {
     public enum GameStates
     {
-        Menu,
         Playing,
         Pause,
-        WaitOpponent,
         GameOver
     }
 }
